@@ -1,0 +1,45 @@
+:root{--bg:#f2f5f3;--card:#fff;--ink:#14261f;--mut:#5d6f67;--line:#dce4df;--pine:#0f6b54;--pine2:#0a4e3d;--mint:#e0f0ea;--rx:#b4410f;--rxbg:#fdeee4;--bad:#b42318;--r:12px}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1815;--card:#17231f;--ink:#e8f1ed;--mut:#9bb0a6;--line:#27382f;--pine:#38b48f;--pine2:#2a9a78;--mint:#1c3029;--rx:#f08a55;--rxbg:#33231a;--bad:#ff8a7a}}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.5 "Onest","Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:var(--pine2);color:#fff;padding:18px 24px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
+header h1{margin:0;font-size:1.4rem;letter-spacing:.2px}
+header small{display:block;opacity:.75;font-weight:400}
+nav{display:flex;gap:6px;flex-wrap:wrap}
+nav button{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3);padding:8px 16px;border-radius:99px;cursor:pointer;font:inherit}
+nav button.on{background:#fff;color:var(--pine2);font-weight:600}
+main{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
+.tab{display:none}.tab.on{display:block}
+.grid{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start}
+@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+h2{margin:0 0 14px;font-size:1.15rem}
+input,select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--bg);color:var(--ink)}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--pine);outline-offset:1px}
+label{display:block;font-size:.85rem;color:var(--mut);margin:12px 0 4px}
+.row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:560px){.row{grid-template-columns:1fr}}
+.chk{display:flex;gap:8px;align-items:center;margin:14px 0;color:var(--ink);font-size:.95rem}.chk input{width:auto}
+.btn{background:var(--pine);color:#fff;border:0;padding:11px 18px;border-radius:8px;font:inherit;font-weight:600;cursor:pointer}
+.btn:hover{background:var(--pine2)}.btn.full{width:100%;margin-top:12px}.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.ghost{background:var(--mint);color:var(--pine2)}
+.search{font-size:1.1rem;padding:14px 16px;margin-bottom:14px}
+.list{display:grid;gap:10px}
+.drug{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:14px 16px;border:1px solid var(--line);border-radius:10px}
+.drug b{font-size:1.05rem}.drug p{margin:2px 0 0;color:var(--mut);font-size:.9rem}
+.tag{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:99px;background:var(--rxbg);color:var(--rx);margin-left:6px;font-weight:600}
+.tag.low{background:#fde8e6;color:var(--bad)}
+.price{font-weight:700;color:var(--pine);white-space:nowrap}
+.empty{text-align:center;color:var(--mut);padding:26px 10px}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line)}th{color:var(--mut);font-weight:500}
+.wrap{overflow-x:auto}
+.cartrow{display:grid;grid-template-columns:1fr 64px 28px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.cartrow input{padding:6px}.x{background:none;border:0;color:var(--bad);font-size:1.2rem;cursor:pointer}
+.total{display:flex;justify-content:space-between;font-size:1.25rem;font-weight:700;margin-top:14px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px}
+.stat{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--pine);border-radius:var(--r);padding:16px}
+.stat span{color:var(--mut);font-size:.85rem}.stat strong{display:block;font-size:1.5rem;margin-top:2px}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 20px;border-radius:99px;opacity:0;transition:opacity .25s;pointer-events:none}
+#toast.show{opacity:1}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}

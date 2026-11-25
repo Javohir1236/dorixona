@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dorixona tizimi</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <h1>Dorixona tizimi<small>Dori qidirish, retsept va buyurtma</small></h1>
+        <nav id="nav">
+            <button data-t="search" class="on">Dori qidirish</button>
+            <button data-t="intake">Kirim</button>
+            <button data-t="report">Hisobot</button>
+        </nav>
+    </header>
+    <main>
+
+        <section class="tab on" id="search">
+            <div class="grid">
+                <div>
+                    <input id="q" class="search" type="search" placeholder="Dori nomini yozing, masalan: Tay-lon-hot"
+                        autocomplete="off">
+                    <div class="list" id="results"></div>
+                </div>
+                <aside class="panel">
+                    <h2>Buyurtma</h2>
+                    <div id="cart"></div>
+                    <div class="total"><span>Jami</span><span id="sum">0 so‘m</span></div>
+                    <label for="patient">Mijoz ismi</label>
+                    <input id="patient" placeholder="Ixtiyoriy">
+                    <label for="rx" id="rxl">Retsept raqami</label>
+                    <input id="rx" placeholder="Retsept talab qilinsa majburiy">
+                    <button class="btn full" id="sell">Sotish</button>
+                </aside>
+            </div>
+        </section>
+
+        <section class="tab" id="intake">
+            <div class="panel">
+                <h2>Yangi dori kirimi</h2>
+                <label for="n">Dori nomi</label>
+                <input id="n" placeholder="Tay-lon-hot">
+                <div class="row">
+                    <div><label for="b">Quti soni</label><input id="b" type="number" min="1" value="2"></div>
+                    <div><label for="p">Bir qutidagi dona</label><input id="p" type="number" min="1" value="10"></div>
+                    <div><label for="pr">Dona narxi (so`m)</label><input id="pr" type="number" min="0" value="6000">
+                    </div>
+                </div>
+                <label class="chk"><input type="checkbox" id="isrx"> Retsept bilan beriladigan dori</label>
+                <button class="btn" id="add">Ro`yxatga olish</button>
+            </div>
+            <div class="panel" style="margin-top:20px">
+                <h2>Kirimlar tarixi</h2>
+                <div class="wrap" id="inlog"></div>
+            </div>
+        </section>
+
+        <section class="tab" id="report">
+            <div class="stats" id="stats"></div>
+            <div class="panel">
+                <h2>Omborda qolgan dorilar</h2>
+                <div class="wrap" id="stock"></div>
+            </div>
+            <div class="panel" style="margin-top:20px">
+                <h2>Sotuvlar tarixi</h2>
+                <div class="wrap" id="sales"></div>
+            </div>
+        </section>
+
+    </main>
+    <div id="toast"></div>
+
+    <script>
+        const $ = s => document.querySelector(s);
+        const som = n => Number(n).toLocaleString('uz-UZ').replace(/,/g, ' ') + ' so‘m';
+        const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) || d } catch { return d } };
+        let drugs = load('drugs', []), intakes = load('intakes', []), sales = load('sales', []), cart = [];
+        const save = () => { try { localStorage.setItem('drugs', JSON.stringify(drugs)); localStorage.setItem('intakes', JSON.stringify(intakes)); localStorage.setItem('sales', JSON.stringify(sales)); } catch { } };
+        const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2200); };
+        const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const date = t => new Date(t).toLocaleString('uz-UZ', { dateStyle: 'short', timeStyle: 'short' });
+        const empty = m => `<div class="empty">${m}</div>`;
+
+        document.querySelectorAll('#nav button').forEach(b => b.onclick = () => {
+            document.querySelectorAll('#nav button,.tab').forEach(e => e.classList.remove('on'));
+            b.classList.add('on'); $('#' + b.dataset.t).classList.add('on'); render();
+        });
+
+        function renderSearch() {
+            const q = $('#q').value.trim().toLowerCase();
+            const list = drugs.filter(d => d.name.toLowerCase().includes(q))
+                .sort((a, b) => (b.name.toLowerCase().startsWith(q) - a.name.toLowerCase().startsWith(q)) || (b.stock > 0) - (a.stock > 0) || a.name.localeCompare(b.name));
+            $('#results').innerHTML = !drugs.length ? empty('Hali dori yo‘q. “Kirim” bo‘limida birinchi dorini ro‘yxatga oling.')
+                : !list.length ? empty('Bunday dori topilmadi. Nomini tekshiring yoki Kirim bo‘limidan qo‘shing.')
+                    : list.map(d => `<div class="drug"><div><b>${esc(d.name)}</b>${d.rx ? '<span class="tag">Retsept</span>' : ''}${d.stock > 0 && d.stock <= 10 ? '<span class="tag low">Oz qoldi</span>' : ''}
+      <p>Omborda: ${d.stock} dona (${Math.floor(d.stock / d.perBox)} quti + ${d.stock % d.perBox} dona)</p></div>
+      <div style="text-align:right"><div class="price">${som(d.price)} / dona</div>
+      <button class="btn ghost" ${d.stock < 1 ? 'disabled' : ''} onclick="addCart(${d.id})">${d.stock < 1 ? 'Tugagan' : 'Buyurtmaga'}</button></div></div>`).join('');
+        }
+        function addCart(id) {
+            const d = drugs.find(x => x.id === id), c = cart.find(x => x.id === id);
+            if (c) { if (c.qty < d.stock) c.qty++; else toast('Omborda boshqa qolmadi'); } else cart.push({ id, qty: 1 });
+            renderCart();
+        }
+        function renderCart() {
+            let sum = 0, needRx = false;
+            $('#cart').innerHTML = cart.length ? cart.map((c, i) => {
+                const d = drugs.find(x => x.id === c.id); sum += d.price * c.qty; if (d.rx) needRx = true;
+                return `<div class="cartrow"><span>${esc(d.name)}<br><small>${som(d.price)} × ${c.qty}</small></span>
+    <input type="number" min="1" max="${d.stock}" value="${c.qty}" onchange="setQty(${i},this.value)"><button class="x" onclick="cart.splice(${i},1);renderCart()" aria-label="O‘chirish">×</button></div>`;
+            }).join('')
+                : empty('Natijadan dori tanlang');
+            $('#sum').textContent = som(sum);
+            $('#rxl').textContent = needRx ? 'Retsept raqami (majburiy)' : 'Retsept raqami';
+            $('#sell').disabled = !cart.length;
+        }
+        function setQty(i, v) { const c = cart[i], d = drugs.find(x => x.id === c.id); c.qty = Math.max(1, Math.min(d.stock, parseInt(v) || 1)); renderCart(); }
+        $('#sell').onclick = () => {
+            const rx = $('#rx').value.trim();
+            if (cart.some(c => drugs.find(d => d.id === c.id).rx) && !rx) return toast('Retsept raqamini kiriting');
+            const items = cart.map(c => { const d = drugs.find(x => x.id === c.id); d.stock -= c.qty; return { name: d.name, qty: c.qty, price: d.price }; });
+            const total = items.reduce((s, i) => s + i.qty * i.price, 0);
+            sales.unshift({ t: Date.now(), patient: $('#patient').value.trim(), rx, items, total });
+            cart = []; $('#patient').value = $('#rx').value = ''; save(); renderCart(); renderSearch();
+            toast('Sotildi: ' + som(total));
+        };
+        $('#q').oninput = renderSearch;
+
+        $('#add').onclick = () => {
+            const name = $('#n').value.trim(), boxes = +$('#b').value, perBox = +$('#p').value, price = +$('#pr').value;
+            if (!name || boxes < 1 || perBox < 1 || price < 0) return toast('Barcha maydonlarni to‘ldiring');
+            const qty = boxes * perBox;
+            let d = drugs.find(x => x.name.toLowerCase() === name.toLowerCase());
+            if (d) { d.stock += qty; d.price = price; d.perBox = perBox; d.rx = $('#isrx').checked || d.rx; }
+            else drugs.push({ id: Date.now(), name, stock: qty, perBox, price, rx: $('#isrx').checked });
+            intakes.unshift({ t: Date.now(), name, boxes, perBox, price });
+            save(); $('#n').value = ''; $('#isrx').checked = false; renderIntake(); toast(`${name}: ${boxes} quti qo‘shildi`);
+        };
+        function renderIntake() {
+            $('#inlog').innerHTML = intakes.length ? `<table><tr><th>Sana</th><th>Dori</th><th>Quti</th><th>Dona</th><th>Dona narxi</th><th>Qiymati</th></tr>`
+                + intakes.map(i => `<tr><td>${date(i.t)}</td><td>${esc(i.name)}</td><td>${i.boxes}</td><td>${i.boxes * i.perBox}</td><td>${som(i.price)}</td><td>${som(i.boxes * i.perBox * i.price)}</td></tr>`).join('') + '</table>'
+                : empty('Hali kirim yo‘q');
+        }
+        function renderReport() {
+            const sold = sales.reduce((s, x) => s + x.total, 0), pieces = sales.reduce((s, x) => s + x.items.reduce((a, i) => a + i.qty, 0), 0);
+            const left = drugs.reduce((s, d) => s + d.stock * d.price, 0), cnt = drugs.reduce((s, d) => s + d.stock, 0);
+            $('#stats').innerHTML = [['Jami sotuv summasi', som(sold)], ['Sotilgan dona', pieces], ['Qolgan dorilar', cnt + ' dona'], ['Qolgan dorilar qiymati', som(left)]]
+                .map(([a, b]) => `<div class="stat"><span>${a}</span><strong>${b}</strong></div>`).join('');
+            $('#stock').innerHTML = drugs.length ? `<table><tr><th>Dori</th><th>Qoldiq</th><th>Quti hisobida</th><th>Dona narxi</th><th>Qiymati</th></tr>`
+                + drugs.map(d => `<tr><td>${esc(d.name)}</td><td>${d.stock} dona</td><td>${Math.floor(d.stock / d.perBox)} quti + ${d.stock % d.perBox}</td><td>${som(d.price)}</td><td>${som(d.stock * d.price)}</td></tr>`).join('') + '</table>' : empty('Ombor bo‘sh');
+            $('#sales').innerHTML = sales.length ? `<table><tr><th>Sana</th><th>Mijoz</th><th>Retsept</th><th>Dorilar</th><th>Summa</th></tr>`
+                + sales.map(s => `<tr><td>${date(s.t)}</td><td>${esc(s.patient) || '—'}</td><td>${esc(s.rx) || '—'}</td><td>${s.items.map(i => esc(i.name) + ' × ' + i.qty).join(', ')}</td><td>${som(s.total)}</td></tr>`).join('') + '</table>' : empty('Hali sotuv bo‘lmagan');
+        }
+        function render() { renderSearch(); renderCart(); renderIntake(); renderReport(); }
+        render();
+    </script>
+</body>
+
+</html>
